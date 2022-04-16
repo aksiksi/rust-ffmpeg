@@ -5,10 +5,20 @@ use std::ops::{Deref, DerefMut};
 use super::common::Context;
 use super::destructor;
 use ffi::*;
+use libc::c_int;
 use util::range::Range;
 #[cfg(not(feature = "ffmpeg_5_0"))]
 use Codec;
 use {format, Error, Packet, Stream};
+
+bitflags! {
+    pub struct SeekFlags: c_int {
+        const ANY = sys::AVSEEK_FLAG_ANY;
+        const BACKWARD = sys::AVSEEK_FLAG_BACKWARD;
+        const BYTE = sys::AVSEEK_FLAG_BYTE;
+        const FRAME = sys::AVSEEK_FLAG_FRAME;
+    }
+}
 
 pub struct Input {
     ptr: *mut AVFormatContext,
@@ -127,6 +137,24 @@ impl Input {
                 range.end().cloned().unwrap_or(i64::max_value()),
                 0,
             ) {
+                s if s >= 0 => Ok(()),
+                e => Err(Error::from(e)),
+            }
+        }
+    }
+
+    /// Seeks to a specific frame in the input.
+    ///
+    /// For more info view [ffmpeg's documentation](
+    /// https://ffmpeg.org/doxygen/3.4/group__lavf__decoding.html#gaa23f7619d8d4ea0857065d9979c75ac8).
+    pub fn seek_to_frame(
+        &mut self,
+        stream_idx: i32,
+        timestamp: i64,
+        flags: SeekFlags,
+    ) -> Result<(), Error> {
+        unsafe {
+            match sys::av_seek_frame(self.as_mut_ptr(), stream_idx, timestamp, flags.bits()) {
                 s if s >= 0 => Ok(()),
                 e => Err(Error::from(e)),
             }
