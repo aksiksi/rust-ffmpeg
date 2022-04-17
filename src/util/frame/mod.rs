@@ -76,6 +76,11 @@ impl Frame {
     }
 
     #[inline]
+    pub fn is_discard(&self) -> bool {
+        self.flags().contains(Flags::DISCARD)
+    }
+
+    #[inline]
     pub fn packet(&self) -> Packet {
         unsafe {
             Packet {
