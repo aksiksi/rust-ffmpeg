@@ -189,6 +189,42 @@ impl Audio {
             )
         }
     }
+
+    #[inline]
+    pub fn packed<T: Sample>(&self, index: usize) -> &[T] {
+        if !self.is_packed() {
+            panic!("data is not packed");
+        }
+
+        if !<T as Sample>::is_valid(self.format(), self.channels()) {
+            panic!("unsupported type");
+        }
+
+        unsafe {
+            slice::from_raw_parts(
+                (*self.as_ptr()).data[index] as *const T,
+                self.samples() * self.channels() as usize,
+            )
+        }
+    }
+
+    #[inline]
+    pub fn packed_mut<T: Sample>(&mut self, index: usize) -> &mut [T] {
+        if !self.is_packed() {
+            panic!("data is not packed");
+        }
+
+        if !<T as Sample>::is_valid(self.format(), self.channels()) {
+            panic!("unsupported type");
+        }
+
+        unsafe {
+            slice::from_raw_parts_mut(
+                (*self.as_mut_ptr()).data[index] as *mut T,
+                self.samples() * self.channels() as usize,
+            )
+        }
+    }
 }
 
 impl Deref for Audio {
